@@ -45,7 +45,7 @@ const useNetlifyIdentity = ({ url: _url }) => {
   const authorizedFetch = useCallback(async (url, options) => {
     if (!goTrueToken) throw new Error('Cannot authorizedFetch while logged out')
 
-    return fetch(url, {
+    return window.fetch(url, {
       ...options,
       headers: {
         ...options?.headers,
@@ -56,24 +56,23 @@ const useNetlifyIdentity = ({ url: _url }) => {
 
   // Thin wrapper around useState setter to inject expires_at
   const setGoTrueToken = useCallback(goTrueToken => {
-    _setGoTrueToken(goTrueToken?.access_token
-      ? {
+    if (goTrueToken?.access_token) {
+      _setGoTrueToken({
         ...goTrueToken,
         expires_at: new Date(JSON.parse(window.atob(goTrueToken.access_token.split('.')[1])).exp * 1000)
-      }
-      : goTrueToken
-    )
+      })
+    }
   }, [])
 
   // STUB - Exclusively refreshes the goTrueToken (doesn't touch user) -- 
   // doesn't check any expirations or anything, just goes ahead and refreshes
   const refreshGoTrueToken = useCallback(async () => {
-    setGoTrueToken(await fetch(`${url}/token`, {
+    setGoTrueToken(await window.fetch(`${url}/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: `grant_type=refresh_token&refresh_token=${goTrueToken.refresh_token}`,
+      body: `grant_type=refresh_token&refresh_token=${goTrueToken?.refresh_token}`,
     }).then(resp => resp.json()))
   }, [setGoTrueToken, url, goTrueToken])
 
@@ -145,7 +144,7 @@ const useNetlifyIdentity = ({ url: _url }) => {
     }
     else if (urlToken?.type === 'confirmation') {
       console.log('Confirming User')
-      fetch(`${url}/verify`, {
+      window.fetch(`${url}/verify`, {
         method: 'POST',
         body: JSON.stringify({
           token: urlToken.token,
@@ -167,7 +166,7 @@ const useNetlifyIdentity = ({ url: _url }) => {
     }
     else if (urlToken?.type === 'recovery') {
       console.log('Recovering User')
-      fetch(`${url}/verify`, {
+      window.fetch(`${url}/verify`, {
         method: 'POST',
         body: JSON.stringify({
           token: urlToken.token,
@@ -200,7 +199,7 @@ const useNetlifyIdentity = ({ url: _url }) => {
     else if (urlToken?.type === 'invite') {
       console.log('Setting Up Invited User')
       // Initial POST only sets the password
-      const token = await fetch(`${url}/verify`, {
+      const token = await window.fetch(`${url}/verify`, {
         method: 'POST',
         body: JSON.stringify({
           token: urlToken.token,
@@ -216,7 +215,7 @@ const useNetlifyIdentity = ({ url: _url }) => {
 
   // API: Log in user
   const login = async ({ email, password }) => {
-    const token = await fetch(`${url}/token`, {
+    const token = await window.fetch(`${url}/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -235,7 +234,7 @@ const useNetlifyIdentity = ({ url: _url }) => {
     // Rename props.user_metadata to props.data per GoTrue's (odd) spec
     delete Object.assign(props, { ['data']: props['user_metadata'] })['user_metadata']; // eslint-disable-line
 
-    const response = await fetch(`${url}/signup`, {
+    const response = await window.fetch(`${url}/signup`, {
       method: 'POST',
       body: JSON.stringify(props)
     }).then(resp => resp.json())
@@ -301,7 +300,7 @@ const useNetlifyIdentity = ({ url: _url }) => {
 
   // API: Requests a password recovery email for the specified email-user
   const sendPasswordRecovery = async ({ email }) => {
-    return fetch(`${url}/recover`, {
+    return window.fetch(`${url}/recover`, {
       method: 'POST',
       body: JSON.stringify({ email })
     })
